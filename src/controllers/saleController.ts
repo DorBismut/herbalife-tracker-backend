@@ -40,57 +40,16 @@ export const getSale = async (req: Request, res: Response, next: NextFunction): 
 };
 
 export const createSale = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-  
   try {
     const saleData = req.body;
-    let grossRevenue = 0;
-    let totalCogs = 0;
-    const allocations: any[] = [];
     
-    // Process each item with FIFO
-    for (const item of saleData.items) {
-      const { allocations: itemAllocations, avgUnitCost } = await allocateInventoryFIFO(
-        item.productId,
-        item.qty
-      );
-      
-      allocations.push(...itemAllocations);
-      item.cogsUnit = avgUnitCost;
-      item.cogsLineTotal = avgUnitCost * item.qty;
-      item.lineRevenue = item.unitSalePrice * item.qty;
-      
-      grossRevenue += item.lineRevenue;
-      totalCogs += item.cogsLineTotal;
-    }
-    
-    // Add delivery fee to revenue if charged
-    grossRevenue += saleData.deliveryFeeChargedToCustomer || 0;
-    
-    // Calculate expenses
-    const variableExpenses = (saleData.deliveryCostPaidByMe || 0) + 
-                            (saleData.paymentProcessorFee || 0);
-    
-    saleData.grossRevenue = grossRevenue;
-    saleData.cogs = totalCogs;
-    saleData.variableExpenses = variableExpenses;
-    saleData.grossProfit = grossRevenue - totalCogs;
-    saleData.netProfit = grossRevenue - totalCogs - variableExpenses;
-    
+    // Simplified sale creation for MVP - no complex COGS/inventory tracking
     const sale = new Sale(saleData);
-    await sale.save({ session });
+    await sale.save();
     
-    // Consume inventory
-    await consumeInventory(allocations);
-    
-    await session.commitTransaction();
     res.status(201).json(sale);
   } catch (error) {
-    await session.abortTransaction();
     next(error);
-  } finally {
-    session.endSession();
   }
 };
 

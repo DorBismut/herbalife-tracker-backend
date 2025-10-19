@@ -40,9 +40,6 @@ export const getPurchase = async (req: Request, res: Response, next: NextFunctio
 };
 
 export const createPurchase = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-  
   try {
     const purchaseData = req.body;
     
@@ -56,41 +53,12 @@ export const createPurchase = async (req: Request, res: Response, next: NextFunc
     }
     
     const purchase = new Purchase(purchaseData);
-    await purchase.save({ session });
+    await purchase.save();
     
-    if (purchaseData.isSelfUse) {
-      // Create expense for self-use
-      const expense = new Expense({
-        date: purchase.date,
-        category: 'Self-Use Products',
-        description: `Self-use purchase #${purchase._id}`,
-        amount: purchase.totalPurchaseCost,
-        paymentMethod: purchase.paymentMethod,
-        relatedPurchase: purchase._id
-      });
-      await expense.save({ session });
-    } else {
-      // Add to inventory (simplified for MVP)
-      for (const item of purchase.items) {
-        const inventoryLot = new InventoryLot({
-          productId: item.productId,
-          qtyReceived: item.quantity,
-          purchaseId: purchase._id,
-          unitCostAfterDiscount: item.unitCost,
-          qtyAvailable: item.quantity,
-          location: 'Main'
-        });
-        await inventoryLot.save({ session });
-      }
-    }
-    
-    await session.commitTransaction();
+    // Simplified for MVP - no complex inventory or expense tracking
     res.status(201).json(purchase);
   } catch (error) {
-    await session.abortTransaction();
     next(error);
-  } finally {
-    session.endSession();
   }
 };
 
