@@ -6,6 +6,10 @@ export interface IExpense extends Document {
   description: string;
   amount: number;
   paymentMethod: string;
+  vendor?: string;
+  invoice?: string;
+  isDeductible: boolean;
+  notes?: string;
   relatedPurchase?: mongoose.Types.ObjectId;
   relatedSale?: mongoose.Types.ObjectId;
   createdAt: Date;
@@ -18,6 +22,10 @@ const ExpenseSchema = new Schema<IExpense>({
   description: { type: String, required: true },
   amount: { type: Number, required: true },
   paymentMethod: { type: String, required: true },
+  vendor: { type: String },
+  invoice: { type: String },
+  isDeductible: { type: Boolean, default: true },
+  notes: { type: String },
   relatedPurchase: { type: Schema.Types.ObjectId, ref: 'Purchase' },
   relatedSale: { type: Schema.Types.ObjectId, ref: 'Sale' }
 }, {

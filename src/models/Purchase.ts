@@ -2,23 +2,21 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 interface IPurchaseItem {
   productId: mongoose.Types.ObjectId;
-  qty: number;
-  unitListPrice: number;
-  discountPct: number;
-  unitCostAfterDiscount: number;
-  lineTotal: number;
+  quantity: number;
+  unitCost: number;
+  expiryDate?: Date;
 }
 
 export interface IPurchase extends Document {
   date: Date;
   supplier: string;
-  currency: string;
-  items: IPurchaseItem[];
-  shipping: number;
-  otherFees: number;
+  invoice?: string;
   paymentMethod: string;
+  shippingCost: number;
+  otherCosts: number;
   isSelfUse: boolean;
-  subtotal: number;
+  notes?: string;
+  items: IPurchaseItem[];
   totalPurchaseCost: number;
   createdAt: Date;
   updatedAt: Date;
@@ -26,23 +24,21 @@ export interface IPurchase extends Document {
 
 const PurchaseItemSchema = new Schema<IPurchaseItem>({
   productId: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
-  qty: { type: Number, required: true },
-  unitListPrice: { type: Number, required: true },
-  discountPct: { type: Number, default: 0 },
-  unitCostAfterDiscount: { type: Number, required: true },
-  lineTotal: { type: Number, required: true }
+  quantity: { type: Number, required: true },
+  unitCost: { type: Number, required: true },
+  expiryDate: { type: Date }
 });
 
 const PurchaseSchema = new Schema<IPurchase>({
   date: { type: Date, required: true, default: Date.now },
   supplier: { type: String, default: 'Herbalife Distributor' },
-  currency: { type: String, default: 'ILS' },
-  items: [PurchaseItemSchema],
-  shipping: { type: Number, default: 0 },
-  otherFees: { type: Number, default: 0 },
+  invoice: { type: String },
   paymentMethod: { type: String, required: true },
+  shippingCost: { type: Number, default: 0 },
+  otherCosts: { type: Number, default: 0 },
   isSelfUse: { type: Boolean, default: false },
-  subtotal: { type: Number, required: true },
+  notes: { type: String },
+  items: [PurchaseItemSchema],
   totalPurchaseCost: { type: Number, required: true }
 }, {
   timestamps: true
