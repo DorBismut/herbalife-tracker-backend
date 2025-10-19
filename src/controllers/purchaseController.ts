@@ -46,16 +46,14 @@ export const createPurchase = async (req: Request, res: Response, next: NextFunc
   try {
     const purchaseData = req.body;
     
-    // Calculate totals
-    let subtotal = 0;
-    for (const item of purchaseData.items) {
-      item.unitCostAfterDiscount = item.unitListPrice * (1 - item.discountPct / 100);
-      item.lineTotal = item.unitCostAfterDiscount * item.qty;
-      subtotal += item.lineTotal;
+    // Calculate total purchase cost if not provided
+    if (!purchaseData.totalPurchaseCost) {
+      let itemsTotal = 0;
+      for (const item of purchaseData.items) {
+        itemsTotal += item.quantity * item.unitCost;
+      }
+      purchaseData.totalPurchaseCost = itemsTotal + (purchaseData.shippingCost || 0) + (purchaseData.otherCosts || 0);
     }
-    
-    purchaseData.subtotal = subtotal;
-    purchaseData.totalPurchaseCost = subtotal + (purchaseData.shipping || 0) + (purchaseData.otherFees || 0);
     
     const purchase = new Purchase(purchaseData);
     await purchase.save({ session });
@@ -72,14 +70,14 @@ export const createPurchase = async (req: Request, res: Response, next: NextFunc
       });
       await expense.save({ session });
     } else {
-      // Add to inventory
+      // Add to inventory (simplified for MVP)
       for (const item of purchase.items) {
         const inventoryLot = new InventoryLot({
           productId: item.productId,
-          qtyReceived: item.qty,
+          qtyReceived: item.quantity,
           purchaseId: purchase._id,
-          unitCostAfterDiscount: item.unitCostAfterDiscount,
-          qtyAvailable: item.qty,
+          unitCostAfterDiscount: item.unitCost,
+          qtyAvailable: item.quantity,
           location: 'Main'
         });
         await inventoryLot.save({ session });
